@@ -1,48 +1,36 @@
 """
-Database Schemas
+Database Schemas for ClipGen Studio
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model represents a MongoDB collection (collection name is the
+lowercased class name). These schemas are used for validation when inserting
+into the database via the provided helpers.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List
 
-# Example schemas (replace with your own):
 
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    email: EmailStr = Field(..., description="User email (unique)")
+    password_hash: str = Field(..., description="BCrypt password hash")
+    credits: int = Field(5, ge=0, description="Remaining generation credits")
+    name: Optional[str] = Field(None, description="Display name")
+    reset_token: Optional[str] = Field(None, description="Password reset token")
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Image(BaseModel):
+    user_id: str = Field(..., description="Owner user id (stringified ObjectId)")
+    prompt: str = Field(..., description="Prompt used to generate the image")
+    url: str = Field(..., description="Public URL to the generated image")
+    format: str = Field("jpg", description="File format (jpg, png)")
+    width: int = Field(512, description="Image width")
+    height: int = Field(512, description="Image height")
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+
+class Purchase(BaseModel):
+    user_id: str = Field(..., description="Purchaser user id (stringified ObjectId)")
+    tier: str = Field(..., description="Plan tier: starter|creator|pro")
+    amount_eur: float = Field(..., description="Amount paid in EUR")
+    credits_added: int = Field(..., description="Credits added by this purchase")
+    stripe_session_id: Optional[str] = Field(None, description="Stripe checkout session id")
+    stripe_payment_intent: Optional[str] = Field(None, description="Stripe payment intent id")
